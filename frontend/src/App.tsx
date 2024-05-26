@@ -38,6 +38,7 @@ function App() {
   }
 
   const handlePredict = () => {
+    setPredict([])
     const formData = new FormData()
     formData.append('file', file!)
     client

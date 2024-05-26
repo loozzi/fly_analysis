@@ -7,29 +7,31 @@ class PredService:
         pass
 
     def handle_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
-        # thay thế các giá trị thiếu của cột Arrival Delay in Minutes bằng giá trị trung bình của cột
-        df["Arrival Delay in Minutes"].fillna(
-            df["Arrival Delay in Minutes"].mean(), inplace=True
-        )
-        # Đổi thời gian sang phút
-        df["Departure/Arrival time convenient"] = (
-            df["Departure/Arrival time convenient"] * 60
-        )
-        # Đổi khoảng cách sang mét
-        df["Flight Distance"] *= 1000
+        dict_fill = {}
+        for i in range(len(df.columns)):
+            if df.dtypes[i] == "object":
+                dict_fill.update({df.columns[i]: df[df.columns[i]].mode()[0]})
+            else:
+                dict_fill.update({df.columns[i]: df[df.columns[i]].mean()})
+
+        df.fillna(value=dict_fill, inplace=True)
 
         return df
 
     def predict(self, df: pd.DataFrame) -> dict:
         # Xử lý missing values
-        df = self.handle_missing_values(df)
+        if "Unnamed: 0" in df.columns:
+            df.drop("Unnamed: 0", axis=1, inplace=True)
+        if "id" in df.columns:
+            df.drop("id", axis=1, inplace=True)
+
+        new_df = self.handle_missing_values(df)
 
         # Load model
         model = load("./src/models/bagging_model.joblib")
 
         # Predict
-        df.drop(["Unnamed: 0", "id"], axis=1, inplace=True)
-        X_data = df
+        X_data = new_df
         y_pred = model.predict(X_data)
         df["Satisfaction"] = y_pred
         df.to_csv("./src/uploads/predict.csv", index=False)
