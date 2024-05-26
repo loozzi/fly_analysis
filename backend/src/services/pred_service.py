@@ -2,5 +2,6 @@ class PredService:
     def __init__(self) -> None:
         pass
 
-    def predict(self, data: dict) -> dict:
-        return {"result": "success"}
+    def predict(self, filename) -> dict:
+
+        return {"result": "success", "filename": filename}

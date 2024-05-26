@@ -1,7 +1,7 @@
 import { ChangeEvent, useEffect, useState } from 'react'
 import { FaCloudUploadAlt, FaFileImport } from 'react-icons/fa'
 import * as XLSX from 'xlsx'
-import './App.css'
+import '~/App.css'
 import {
   Button,
   Pagination,
@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow
 } from '@nextui-org/react'
+import client from '~/services/axios.service'
 
 function App() {
   const [file, setFile] = useState<File | null>(null)
@@ -26,6 +27,24 @@ function App() {
   const handleUploadFile = (even: ChangeEvent<HTMLInputElement>) => {
     const file = even.target.files?.[0]!
     setFile(file)
+  }
+
+  const handlePredict = () => {
+    // const ws = XLSX.utils.json_to_sheet(tableData)
+    // const wb = XLSX.utils.book_new()
+    // XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+    // XLSX.writeFile(wb, 'data.xlsx')
+    const formData = new FormData()
+    formData.append('file', file!)
+    client
+      .post('ml/predict', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      .then((res) => {
+        console.log(res.data)
+      })
   }
 
   const columns = [
@@ -121,17 +140,7 @@ function App() {
             }
             bottomContent={
               <div className='flex justify-center'>
-                <Button
-                  className='mt-4'
-                  color='primary'
-                  startContent={<FaFileImport />}
-                  onClick={() => {
-                    const ws = XLSX.utils.json_to_sheet(tableData)
-                    const wb = XLSX.utils.book_new()
-                    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
-                    XLSX.writeFile(wb, 'data.xlsx')
-                  }}
-                >
+                <Button className='mt-4' color='primary' startContent={<FaFileImport />} onClick={handlePredict}>
                   Thực hiện dự đoán
                 </Button>
               </div>
