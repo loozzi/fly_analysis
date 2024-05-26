@@ -18,3 +18,8 @@ def predict():
         return HttpResponse(status=400, message="No file found")
 
     return predController.predict(file)
+
+
+@pred_route.route("/download", methods=["GET"])
+def download():
+    return predController.download()
