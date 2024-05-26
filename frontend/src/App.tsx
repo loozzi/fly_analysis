@@ -1,7 +1,3 @@
-import { ChangeEvent, useEffect, useState } from 'react'
-import { FaCloudUploadAlt, FaFileImport } from 'react-icons/fa'
-import * as XLSX from 'xlsx'
-import '~/App.css'
 import {
   Button,
   Pagination,
@@ -14,7 +10,17 @@ import {
   TableHeader,
   TableRow
 } from '@nextui-org/react'
+import { ChangeEvent, useEffect, useState } from 'react'
+import { FaCloudUploadAlt, FaFileDownload, FaFileImport } from 'react-icons/fa'
+import * as XLSX from 'xlsx'
+import '~/App.css'
 import client from '~/services/axios.service'
+import PieChart from './components/pie-chart'
+
+interface PredictResponse {
+  result: string
+  predict: string[]
+}
 
 function App() {
   const [file, setFile] = useState<File | null>(null)
@@ -23,6 +29,8 @@ function App() {
   const [filteredData, setFilteredData] = useState<any[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [predict, setPredict] = useState<string[]>([])
+  const [predictResult, setPredictResult] = useState<any[]>(['Satisfaction', 'Count'])
 
   const handleUploadFile = (even: ChangeEvent<HTMLInputElement>) => {
     const file = even.target.files?.[0]!
@@ -30,10 +38,6 @@ function App() {
   }
 
   const handlePredict = () => {
-    // const ws = XLSX.utils.json_to_sheet(tableData)
-    // const wb = XLSX.utils.book_new()
-    // XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
-    // XLSX.writeFile(wb, 'data.xlsx')
     const formData = new FormData()
     formData.append('file', file!)
     client
@@ -43,11 +47,40 @@ function App() {
         }
       })
       .then((res) => {
-        console.log(res.data)
+        const data = res.data as PredictResponse
+        if (data === null) return alert('Không thể dự đoán')
+
+        const _predict = data?.predict
+
+        if (!_predict) {
+          console.log(data)
+          return alert('Không thể dự đoán')
+        } else {
+          setPredict(_predict)
+          setTableData((prev) => {
+            return prev.map((item, index) => {
+              return {
+                ...item,
+                Satisfaction: _predict[index]
+              }
+            })
+          })
+        }
       })
   }
 
+  const handleDownloadPredict = () => {
+    client.get('ml/download').then((res) => {
+      const data = res as any
+      const downloadLink = document.createElement('a')
+      downloadLink.href = URL.createObjectURL(new Blob([data], { type: 'application/octet-stream' }))
+      downloadLink.setAttribute('download', 'predict_result.csv')
+      downloadLink.click()
+    })
+  }
+
   const columns = [
+    { name: 'Satisfaction', uid: 'Satisfaction' },
     { name: 'Age', uid: 'Age' },
     { name: 'Arrival Delay in Minutes', uid: 'Arrival Delay in Minutes' },
     { name: 'Baggage handling', uid: 'Baggage handling' },
@@ -71,6 +104,21 @@ function App() {
     { name: 'Seat comfort', uid: 'Seat comfort' },
     { name: 'Type of Travel', uid: 'Type of Travel' }
   ]
+
+  useEffect(() => {
+    const _temp = [['Satisfaction', 'Count']]
+    const result = predict.reduce((acc, val) => {
+      const existingEntry = acc.find((entry) => entry[0] === val)
+      if (existingEntry) {
+        existingEntry[1]++
+      } else {
+        acc.push([val, 1] as never)
+      }
+      return acc
+    }, [])
+    _temp.push(...result)
+    setPredictResult(_temp)
+  }, [predict])
 
   useEffect(() => {
     if (file) {
@@ -101,6 +149,9 @@ function App() {
 
   return (
     <div>
+      <h1 className='text-3xl font-semibold text-center mb-4'>
+        {file ? 'Satisfaction Prediction' : 'Upload file to predict'}
+      </h1>
       {filteredData.length && (
         <div className='mb-4'>
           <Table
@@ -141,7 +192,7 @@ function App() {
             bottomContent={
               <div className='flex justify-center'>
                 <Button className='mt-4' color='primary' startContent={<FaFileImport />} onClick={handlePredict}>
-                  Thực hiện dự đoán
+                  Predict
                 </Button>
               </div>
             }
@@ -167,6 +218,20 @@ function App() {
           </Table>
         </div>
       )}
+      {predict.length > 1 && (
+        <div className='mb-4'>
+          <h2 className='text-2xl font-semibold text-center mb-4'>Predict result</h2>
+          <PieChart
+            data={predictResult}
+            options={{
+              title: 'Predict satisfaction'
+            }}
+          />
+          <Button color='primary' variant='ghost' startContent={<FaFileDownload />} onClick={handleDownloadPredict}>
+            Download predict result
+          </Button>
+        </div>
+      )}
 
       <div className='border-1 border-gray-200 rounded-lg'>
         <div className='p-4'>
@@ -178,7 +243,7 @@ function App() {
               <div className='flex flex-col items-center justify-center pt-5 pb-6'>
                 <FaCloudUploadAlt color='#ccc' size={56} />
                 <p className='mb-2 text-sm text-gray-500 dark:text-gray-400'>
-                  <span className='font-semibold'>Tải file lên</span> hoặc kéo thả vào đây
+                  <span className='font-semibold'>Upload file</span> or drag and drop
                 </p>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>xlsx, xls, csv...</p>
               </div>
