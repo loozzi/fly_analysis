@@ -20,6 +20,6 @@ class PredController:
 
     def download(self):
         try:
-            return HttpFileResponse(200, "Success", None, "./uploads/predict.csv")
+            return HttpFileResponse("./uploads/predict.csv")
         except Exception as e:
             return HttpResponse(500, str(e))
