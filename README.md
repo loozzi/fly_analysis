@@ -28,3 +28,49 @@
 	<a href="https://github.com/loozzi/fly_analysis/issues/">Yêu cầu tính năng</a>
 </h4>
 </div>
+
+## Hướng dẫn cài đặt
+
+Clone repo:
+
+```
+git clone https://github.com/loozzi/fly_analysis.git
+```
+
+hoặc [tải file zip](https://github.com/loozzi/fly_analysis/archive/refs/heads/master.zip) và giải nén
+Tiếp tục
+
+```
+cd fly_analysis/backend
+```
+
+### Cài đặt thủ công
+
+Cài đặt thư viện
+
+```
+pip install -r requirements.txt
+```
+
+Chạy web
+
+```
+python app.py
+```
+
+### Cài đặt bằng Docker
+
+Chạy lệnh build image
+
+```
+docker build -t <tên image>
+```
+
+Chạy container docker
+
+```
+docker run -dp <cổng host>:1000 <tên image>
+```
+
+Theo mặc định app sẽ được chạy trên cổng `1000`,
+[http://localhost:1000](http://localhost:1000).
